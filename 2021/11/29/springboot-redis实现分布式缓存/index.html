@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="alternate" href="/atom.xml" title="陨落星辰藏书阁" type="application/atom+xml">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.5.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":true,"show_result":true,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: '复制',
+      copy_success: '复制成功',
+      copy_failure: '复制失败'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="缓存1指程序或系统中常用的数据对象存储在像内存这样特定的介质中，以避免在每次程序调用时，重新创建或组织数据所带来的性能损耗，从而提高了系统的整体运行速度。用户的请求一般会经过缓存系统，如果缓存系统中没有相关数据，就会在其他系统中查询相应的数据并保存在缓存中，最后返回给调用方。  本地缓存123指程序级别的缓存组件，它的特点是本地缓存和应用程序会运行在同一个进程中，所以本地缓存的操作会非常快，因为在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="springboot-redis实现分布式缓存">
+<meta property="og:url" content="http://example.com/2021/11/29/springboot-redis%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98/index.html">
+<meta property="og:site_name" content="陨落星辰藏书阁">
+<meta property="og:description" content="缓存1指程序或系统中常用的数据对象存储在像内存这样特定的介质中，以避免在每次程序调用时，重新创建或组织数据所带来的性能损耗，从而提高了系统的整体运行速度。用户的请求一般会经过缓存系统，如果缓存系统中没有相关数据，就会在其他系统中查询相应的数据并保存在缓存中，最后返回给调用方。  本地缓存123指程序级别的缓存组件，它的特点是本地缓存和应用程序会运行在同一个进程中，所以本地缓存的操作会非常快，因为在">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-11-29T06:20:31.000Z">
+<meta property="article:modified_time" content="2021-12-07T03:04:54.889Z">
+<meta property="article:author" content="夜烛">
+<meta property="article:tag" content="分布式缓存">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2021/11/29/springboot-redis%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>springboot-redis实现分布式缓存 | 陨落星辰藏书阁</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">陨落星辰藏书阁</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">一名普通的搬砖工</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签<span class="badge">9</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">8</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">10</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/einstein001" class="github-corner" title="关注我" aria-label="关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/11/29/springboot-redis%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://avatars.githubusercontent.com/u/39729328?s=400&u=976a721637aadd56464c60a83c1044c1658a4d03&v=4">
+      <meta itemprop="name" content="夜烛">
+      <meta itemprop="description" content="一名普通的搬砖工">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="陨落星辰藏书阁">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          springboot-redis实现分布式缓存
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-29 14:20:31" itemprop="dateCreated datePublished" datetime="2021-11-29T14:20:31+08:00">2021-11-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-12-07 11:04:54" itemprop="dateModified" datetime="2021-12-07T11:04:54+08:00">2021-12-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/redis/" itemprop="url" rel="index">
+                    <span itemprop="name">redis</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <html><head></head><body></body></html><html><head></head><body><h4 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">指程序或系统中常用的数据对象存储在像内存这样特定的介质中，以避免在每次程序调用时，重新创建或组织数据所带来的性能损耗，从而提高了系统的整体运行速度。用户的请求一般会经过缓存系统，如果缓存系统中没有相关数据，就会在其他系统中查询相应的数据并保存在缓存中，最后返回给调用方。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="本地缓存"><a href="#本地缓存" class="headerlink" title="本地缓存"></a>本地缓存</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">指程序级别的缓存组件，它的特点是本地缓存和应用程序会运行在同一个进程中，所以本地缓存的操作会非常快，因为在同一个进程内也意味着不会有网络上的延迟和开销。</span><br><span class="line">本地缓存适用于单节点非集群的应用场景，它的优点是快，缺点是多程序无法共享缓存，比如分布式用户 Session 会话信息保存，由于每次用户访问的服务器可能是不同的，如果不能共享缓存，那么就意味着每次的请求操作都有可能被系统阻止，因为会话信息只保存在某一个服务器上，当请求没有被转发到这台存储了用户信息的服务器时，就会被认为是非登录的违规操作。</span><br><span class="line">除此之外，无法共享缓存可能会造成系统资源的浪费，这是因为每个系统都单独维护了一份属于自己的缓存，而同一份缓存有可能被多个系统单独进行存储，从而浪费了系统资源。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="分布式缓存"><a href="#分布式缓存" class="headerlink" title="分布式缓存"></a>分布式缓存</h4><figure class="highlight"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">指将应用系统和缓存组件进行分离的缓存机制，这样多个应用系统就可以共享一套缓存数据了，它的特点是共享缓存服务和可集群部署，为缓存系统提供了高可用的运行环境，以及缓存共享的程序运行机制。</span><br><span class="line">本地缓存可以使用EhCache 和 Google 的 Guava来实现，而分布式缓存可以使用 Redis 或 Memcached 来实现。</span><br><span class="line">由于 Redis 本身就是独立的缓存系统，因此可以作为第三方来提供共享的数据缓存，而 Redis 的分布式支持主从、哨兵和集群的模式，所以它就可以支持分布式的缓存，而 Memcached 的情况也是类似的。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="分布式缓存常见文件及解决方案"><a href="#分布式缓存常见文件及解决方案" class="headerlink" title="分布式缓存常见文件及解决方案"></a>分布式缓存常见文件及解决方案</h4><figure class="highlight mathematica"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">分布式缓存设计的核心问题是以哪种方式进行缓存预热和缓存更新， 以及如何优雅解决缓存雪崩、缓存穿透、缓存降级等问题。这些问题在不 同的应用场景下有不同的解决方案。</span><br><span class="line"></span><br><span class="line">缓存预热： 缓存预热指在用户请求数据前先将数据加载到缓存系统中，用户查询 事先被预热的缓存数据，以提高系统查询效率。缓存预热一般有系统启动 加载、定时加载等方式。</span><br><span class="line"></span><br><span class="line">缓存更新<span class="operator">:</span> 缓存更新指在数据发生变化后及时将变化后的数据更新到缓存中。常 见的缓存更新策略有以下<span class="number">4</span>种。</span><br><span class="line"></span><br><span class="line"> 定时更新：定时将底层数据库内的数据更新到缓存中，该方法比较 简单，适合需要缓存的数据量不是很大的应用场景。</span><br><span class="line">过期更新：定时将缓存中过期的数据更新为最新数据并更新缓存的 过期时间。</span><br><span class="line">写请求更新：在用户有写请求时先写数据库同时更新缓存，这适用 于用户对缓存数据和数据库的数据有实时强一致性要求的情况。</span><br><span class="line"> 读请求更新：在用户有读请求时，先判断该请求数据的缓存是否存 在或过期，如果不存在或已过期，则进行底层数据库查询并将查询结果更 新到缓存中，同时将查询结果返回给用户。</span><br><span class="line">缓存淘汰策略 在缓存数据过多时需要使用某种淘汰算法决定淘汰哪些数据。常用的 淘汰算法有以下几种。</span><br><span class="line"></span><br><span class="line"> <span class="variable">FIFO</span>（<span class="built_in">First</span> <span class="built_in">In</span> <span class="built_in">First</span> <span class="built_in">Out</span>，先进先出）：判断被存储的时间，离 目前最远的数据优先被淘汰。</span><br><span class="line"> <span class="variable">LRU</span>（<span class="variable">Least</span> <span class="variable">Recently</span> <span class="variable">Used</span>，最近最少使用）：判断缓存最近被使 用的时间，距离当前时间最远的数据优先被淘汰。</span><br><span class="line"> <span class="variable">LFU</span>（<span class="variable">Least</span> <span class="variable">Frequently</span> <span class="variable">Used</span>，最不经常使用）：在一段时间内， 被使用次数最少的缓存优先被淘汰。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a><strong>缓存雪崩</strong></h4><figure class="highlight x86asm"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">缓存雪崩指在同一时刻由于大量缓存失效，导致大量原本应该访问缓 存的请求都去查询数据库，而对数据库的<span class="meta">CPU</span>和内存造成巨大压力，严重的 话会导致数据库宕机，从而形成一系列连锁反应，使整个系统崩溃。</span><br><span class="line"></span><br><span class="line">解决方案：</span><br><span class="line"></span><br><span class="line">◎ 请求加锁：对于并发量不是很多的应用，使用请求加锁排队的方案 防止过多请求数据库。</span><br><span class="line"></span><br><span class="line">◎ 失效更新：为每一个缓存数据都增加过期标记来记录缓存数据是否 失效，如果缓存标记失效，则更新数据缓存。</span><br><span class="line"></span><br><span class="line">◎ 缓存数据的过期时间设置随机：为不同的数据设置不同的缓存失效时间，防止在同一时刻有大量的数据失效。</span><br><span class="line"></span><br><span class="line">◎如果缓存数据库是分布式部署，将热点数据均匀分布在不同的缓存数据库中。</span><br><span class="line"></span><br><span class="line">◎设置热点数据永远不过期。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a><strong>缓存穿透</strong></h4><figure class="highlight lasso"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">缓存穿透指由于缓存系统故障或者用户频繁查询系统中不存在（在系 统中不存在，在自然数据库和缓存中都不存在）的数据，而这时请求穿过 缓存不断被发送到数据库，导致数据库过载，进而引发一连串并发问题。 比如用户发起一个userName为zhangsan的请求，而在系统中并没有名 为zhangsan的用户，这样就导致每次查询时在缓存中都找不到该数据，然 后去数据库中再查询一遍。由于zhangsan用户本身在系统中不存在，自然 返回空，导致请求穿过缓存频繁查询数据库，在用户频繁发送该请求时将 导致数据库系统负载增大，从而可能引发其他问题。常用的解决缓存穿透 问题的方法有布隆过滤器和<span class="keyword">cache</span> <span class="built_in">null</span>策略。</span><br><span class="line"></span><br><span class="line">解决方案：</span><br><span class="line"></span><br><span class="line">◎接口层增加校验，如用户鉴权校验，id做基础校验，id&lt;=<span class="number">0</span>的直接拦截，一定不存在的不去查询数据库。</span><br><span class="line"></span><br><span class="line">◎ 布隆过滤器：指将所有可能存在的数据都映射到一个足够大的 Bitmap中，在用户发起请求时首先经过布隆过滤器的拦截，一个一定不存 在的数据会被这个布隆过滤器拦截，从而避免对底层存储系统带来查询上 的压力。</span><br><span class="line"></span><br><span class="line">◎ <span class="keyword">cache</span> <span class="built_in">null</span>策略：指如果一个查询返回的结果为<span class="built_in">null</span>（可能是数据 不存在，也可能是系统故障），我们仍然缓存这个<span class="built_in">null</span>结果，但它的过期 时间会很短，通常不超过 <span class="number">5</span> 分钟；在用户再次请求该数据时直接返回 <span class="built_in">null</span>，而不会继续访问数据库，从而有效保障数据库的安全。其实<span class="keyword">cache</span> <span class="built_in">null</span>策略的核心原理是：在缓存中记录一个短暂的（数据过期时间内）数 据在系统中是否存在的状态，如果不存在，则直接返回<span class="built_in">null</span>，不再查询数 据库，从而避免缓存穿透到数据库上。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a><strong>缓存击穿</strong></h4><figure class="highlight"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">缓存击穿是指缓存中没有但数据库中有的数据（一般是缓存时间到期），这时由于并发用户特别多，同时读缓存没读到数据，又同时去数据库去取数据，引起数据库压力瞬间增大，造成过大压力</span><br><span class="line"></span><br><span class="line">解决方案：</span><br><span class="line"></span><br><span class="line">◎ 设置热点数据永远不过期。</span><br><span class="line"></span><br><span class="line">◎ 加互斥锁。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="缓存降级"><a href="#缓存降级" class="headerlink" title="缓存降级"></a><strong>缓存降级</strong></h4><figure class="highlight lasso"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">缓存降级指由于访问量剧增导致服务出现问题（如响应时间慢或不响 应）时，优先保障核心业务的运行，减少或关闭非核心业务对资源的使 用。</span><br><span class="line"></span><br><span class="line">服务降级策略：</span><br><span class="line"></span><br><span class="line">◎ 写降级：在写请求增大时，可以只进行<span class="keyword">Cache</span>的更新，然后将数据 异步更新到数据库中，保证最终一致性即可，即将写请求从数据库降级为 <span class="keyword">Cache</span>。</span><br><span class="line"></span><br><span class="line">◎ 读降级：在数据库服务负载过高或数据库系统故障时，可以只对 <span class="keyword">Cache</span>进行读取并将结果返回给用户，在数据库服务正常后再去查询数据 库，即将读请求从数据库降级为<span class="keyword">Cache</span>。这种方式适用于对数据实时性要求 不高的场景，保障了在系统发生故障的情况下用户依然能够访问到数据， 只是访问到的数据相对有延迟。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="一、在pom中添加依赖"><a href="#一、在pom中添加依赖" class="headerlink" title="一、在pom中添加依赖"></a>一、在pom中添加依赖</h4><figure class="highlight xml"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!--springboot redis依赖--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-data-redis<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="二、在配置文件中配置Redis连接"><a href="#二、在配置文件中配置Redis连接" class="headerlink" title="二、在配置文件中配置Redis连接"></a>二、在配置文件中配置Redis连接</h4><figure class="highlight xml"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">spring:</span><br><span class="line">  redis:</span><br><span class="line">    database: 0</span><br><span class="line">    host: 172.28.68.151</span><br><span class="line">    port: 6379</span><br><span class="line">    password: YYES@ceshi2019</span><br><span class="line">    jedis:</span><br><span class="line">      pool:</span><br><span class="line">        max-idle: 10</span><br><span class="line">        max-wait: 3000</span><br><span class="line">        min-idle: 0</span><br><span class="line">    timeout: 3000</span><br><span class="line"></span><br><span class="line">server:</span><br><span class="line">  port: 7778</span><br><span class="line">  servlet:</span><br><span class="line">    context-path: /vi2</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="三、编写Redis配置文件"><a href="#三、编写Redis配置文件" class="headerlink" title="三、编写Redis配置文件"></a>三、编写Redis配置文件</h4><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableCaching</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedisConfig</span> <span class="keyword">extends</span> <span class="title">CachingConfigurerSupport</span> </span>{</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@SuppressWarnings("rawtypes")</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CacheManager <span class="title">cacheManager</span><span class="params">(RedisTemplate redisTemplate)</span> </span>{</span><br><span class="line">        RedisCacheManager rcm = <span class="keyword">new</span> RedisCacheManager(redisTemplate);</span><br><span class="line">        <span class="comment">// 多个缓存的名称,目前只定义了一个</span></span><br><span class="line">        rcm.setCacheNames(Arrays.asList(<span class="string">"thisredis"</span>));</span><br><span class="line">        <span class="comment">//设置缓存过期时间(秒)</span></span><br><span class="line">        rcm.setDefaultExpiration(<span class="number">600</span>);</span><br><span class="line">        <span class="keyword">return</span> rcm;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> RedisTemplate&lt;String, Object&gt; <span class="title">restTemplate</span><span class="params">(RedisConnectionFactory factory)</span></span>{</span><br><span class="line">        RedisTemplate&lt;String, Object&gt; template = <span class="keyword">new</span> RedisTemplate&lt;&gt;();</span><br><span class="line">        template.setConnectionFactory(factory);</span><br><span class="line">        <span class="comment">// 序列化和反序列化redis的value值（默认使用JDK的序列化方式）</span></span><br><span class="line">        Jackson2JsonRedisSerializer&lt;Object&gt; serializer = <span class="keyword">new</span> Jackson2JsonRedisSerializer&lt;&gt;(Object.class);</span><br><span class="line">        ObjectMapper obj = <span class="keyword">new</span> ObjectMapper();</span><br><span class="line">        <span class="comment">// 指定序列化输入的类型，类必须是非final修饰的，final修饰的类，比如String,Integer等会跑出异常</span></span><br><span class="line">        obj.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);</span><br><span class="line">        <span class="comment">// 指定序列化输入的类型，类必须是非final修饰的，final修饰的类，比如String,Integer等会跑出异常</span></span><br><span class="line">        obj.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);</span><br><span class="line">        serializer.setObjectMapper(obj);</span><br><span class="line">        <span class="comment">//值使用json序列化</span></span><br><span class="line">        template.setValueSerializer(serializer);</span><br><span class="line">        <span class="comment">//使用StringRedisSerialize来序列化与反序列化redis的key值</span></span><br><span class="line">        template.setKeySerializer(<span class="keyword">new</span> StringRedisSerializer());</span><br><span class="line">        <span class="comment">//设置hash模式的key与value序列化模式</span></span><br><span class="line">        template.setHashKeySerializer(<span class="keyword">new</span> StringRedisSerializer());</span><br><span class="line">        template.setHashValueSerializer(serializer);</span><br><span class="line">        template.afterPropertiesSet();</span><br><span class="line">        <span class="keyword">return</span> template;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="四、测试Redis缓存"><a href="#四、测试Redis缓存" class="headerlink" title="四、测试Redis缓存"></a>四、测试Redis缓存</h4><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping("/redis")</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">OyRedisController</span> </span>{</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 依赖注入，注入redisTemplate</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> RedisTemplate redisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 测试redis string add</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping("/string/add")</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">addStringKeyValue</span><span class="params">(<span class="meta">@RequestParam(value = "key", defaultValue = "key1")</span> String key, <span class="meta">@RequestParam(value = "value", defaultValue = "redis value")</span> String value)</span> </span>{</span><br><span class="line">        redisTemplate.opsForValue().set(key, value);</span><br><span class="line">        <span class="keyword">return</span> (String) redisTemplate.opsForValue().get(key);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 测试redis string add</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping("/object/add")</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">addObjectKeyValue</span><span class="params">(<span class="meta">@RequestParam(value = "key", defaultValue = "key1")</span> String key)</span> </span>{</span><br><span class="line">        OyUser user = <span class="keyword">new</span> OyUser(<span class="number">1</span>, <span class="string">"宋江"</span>, <span class="string">"18"</span>, <span class="string">"male"</span>);</span><br><span class="line">        redisTemplate.opsForValue().set(key, user);</span><br><span class="line">        <span class="keyword">return</span> redisTemplate.opsForValue().get(key);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 测试redis string get</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping("/string/get")</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getStringByKey</span><span class="params">(<span class="meta">@RequestParam(value = "key", defaultValue = "key1")</span> String key)</span> </span>{</span><br><span class="line">        <span class="keyword">return</span> redisTemplate.opsForValue().get(key);</span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Cacheable(value="thisredis", key="'users_'+#id")</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">findUser</span><span class="params">(Integer id)</span> </span>{</span><br><span class="line">        User user = <span class="keyword">new</span> User();</span><br><span class="line">        user.setUsername(<span class="string">"hlhdidi"</span>);</span><br><span class="line">        user.setPassword(<span class="string">"123"</span>);</span><br><span class="line">        user.setUid(id.longValue());</span><br><span class="line">        System.out.println(<span class="string">"log4j2坏啦?"</span>);</span><br><span class="line">        logger.info(<span class="string">"输入user,用户名:{},密码:{}"</span>,user.getUsername(),user.getPassword());</span><br><span class="line">        <span class="keyword">return</span> user;</span><br><span class="line">    }</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@CacheEvict(value="thisredis", key="'users_'+#id",condition="#id!=1")</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">delUser</span><span class="params">(Integer id)</span> </span>{</span><br><span class="line">        <span class="comment">// 删除user</span></span><br><span class="line">        System.out.println(<span class="string">"user删除"</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+</body></html>
+    </div>
+
+    
+    
+    
+      
+        <div class="reward-container">
+  <div></div>
+  <button disable="enable" onclick="var qr = document.getElementById(&quot;qr&quot;); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.png" alt="夜烛 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.png" alt="夜烛 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <div>
+        
+          <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------本文结束<i class="fa fa-paw"></i>感谢您的阅读-------------</div>
+    
+</div>
+
+        
+      </div>
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98/" rel="tag"># 分布式缓存</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+                <a href="/2021/11/29/%E9%9D%A2%E8%AF%95%E6%80%BB%E7%BB%93/" rel="next" title="面试总结">
+                  <i class="fa fa-chevron-left"></i> 面试总结
+                </a>
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+                <a href="/2021/11/30/springboot-Jasypt%E5%8A%A0%E5%AF%86/" rel="prev" title="springboot+Jasypt加密">
+                  springboot+Jasypt加密 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+    
+  <div class="comments" id="comments">
+    <div id="lv-container" data-id="city" data-uid="MTAyMC80NzU1My8yNDA1Mw=="></div>
+  </div>
+  
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98"><span class="nav-number">1.</span> <span class="nav-text">缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98"><span class="nav-number">2.</span> <span class="nav-text">本地缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98"><span class="nav-number">3.</span> <span class="nav-text">分布式缓存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E7%BC%93%E5%AD%98%E5%B8%B8%E8%A7%81%E6%96%87%E4%BB%B6%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">4.</span> <span class="nav-text">分布式缓存常见文件及解决方案</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9"><span class="nav-number">5.</span> <span class="nav-text">缓存雪崩</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F"><span class="nav-number">6.</span> <span class="nav-text">缓存穿透</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF"><span class="nav-number">7.</span> <span class="nav-text">缓存击穿</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E9%99%8D%E7%BA%A7"><span class="nav-number">8.</span> <span class="nav-text">缓存降级</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%9C%A8pom%E4%B8%AD%E6%B7%BB%E5%8A%A0%E4%BE%9D%E8%B5%96"><span class="nav-number">9.</span> <span class="nav-text">一、在pom中添加依赖</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%9C%A8%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%AD%E9%85%8D%E7%BD%AERedis%E8%BF%9E%E6%8E%A5"><span class="nav-number">10.</span> <span class="nav-text">二、在配置文件中配置Redis连接</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%BC%96%E5%86%99Redis%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">11.</span> <span class="nav-text">三、编写Redis配置文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%B5%8B%E8%AF%95Redis%E7%BC%93%E5%AD%98"><span class="nav-number">12.</span> <span class="nav-text">四、测试Redis缓存</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <img class="site-author-image" itemprop="image" alt="夜烛"
+    src="https://avatars.githubusercontent.com/u/39729328?s=400&u=976a721637aadd56464c60a83c1044c1658a4d03&v=4">
+  <p class="site-author-name" itemprop="name">夜烛</p>
+  <div class="site-description" itemprop="description">一名普通的搬砖工</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="feed-link motion-element">
+    <a href="/atom.xml" rel="alternate">
+      <i class="fa fa-rss"></i>RSS
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yourname" title="GitHub &amp;rarr; https:&#x2F;&#x2F;github.com&#x2F;yourname" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:yourname@gmail.com" title="E-Mail &amp;rarr; mailto:yourname@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/yourname" title="Weibo &amp;rarr; https:&#x2F;&#x2F;weibo.com&#x2F;yourname" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://youtube.com/yourname" title="YouTube &amp;rarr; https:&#x2F;&#x2F;youtube.com&#x2F;yourname" rel="noopener" target="_blank"><i class="fa fa-fw fa-youtube"></i>YouTube</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">夜烛</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v5.4.0
+  </div>
+
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+<div class="busuanzi-count">
+  <script pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="//cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-nest@1/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.getAttribute('pjax') !== null) {
+      element.setAttribute('pjax', '');
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+
+  
+
+  
+
+<script>
+  window.livereOptions = {
+    refer: location.pathname.replace(CONFIG.root, '').replace('index.html', '')
+  };
+  (function(d, s) {
+    var j, e = d.getElementsByTagName(s)[0];
+    if (typeof LivereTower === 'function') { return; }
+    j = d.createElement(s);
+    j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+    j.async = true;
+    e.parentNode.insertBefore(j, e);
+  })(document, 'script');
+</script>
+
+    </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
